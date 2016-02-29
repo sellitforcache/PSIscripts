@@ -1022,9 +1022,10 @@ if typeflag:
 		surface_normal  = numpy.array([surface_plane[0],surface_plane[1],surface_plane[2]]) 
 		surface_vec1    = numpy.array([-surface_plane[1],surface_plane[0] ,  0.0])
 		surface_vec2    = numpy.array([0.0,0.0,1.0])
-		surface_normal_rot  = rotate_xy(surface_normal,-6.0)  # FOCUS is -6 degrees off plane
-		surface_vec1_rot    = rotate_xy(surface_vec1,  -6.0)  # FOCUS is -6 degrees off plane
-		surface_vec2_rot    = rotate_xy(surface_vec2,  -6.0)  # FOCUS is -6 degrees off plane
+		xy_rotation_degrees = -6.0
+		surface_normal_rot  = rotate_xy(surface_normal,xy_rotation_degrees)  # FOCUS is -6 degrees off plane
+		surface_vec1_rot    = rotate_xy(surface_vec1,  xy_rotation_degrees)  # FOCUS is -6 degrees off plane
+		surface_vec2_rot    = rotate_xy(surface_vec2,  xy_rotation_degrees)  # FOCUS is -6 degrees off plane
 		# spectrum plot
 		spec_res=256.
 		surface_area=(x_bins[-1]-x_bins[0])*(y_bins[-1]-y_bins[0])
@@ -1190,6 +1191,10 @@ if printflag:
 	print "    "
 	print "X bin boundaries (cm)\n", x_bins
 	print "    "
+	print "NORMAL HAS BEEN ROTATED (only for angular calculations, not position!):\n",
+	print "   X-Y:  % 4.2f degrees" % xy_rotation_degrees
+	print "   Y-Z:  % 4.2f degrees" % 0.0
+	print "    "
 
 ### check to make sure surface basis vectors are orthogonal
 assert( numpy.abs(numpy.dot(surface_vec1,surface_vec2)  ) <= 1.e-8 )
@@ -1197,6 +1202,7 @@ assert( numpy.abs(numpy.dot(surface_vec1,surface_normal)) <= 1.e-8 )
 assert( numpy.abs(numpy.dot(surface_vec2,surface_normal)) <= 1.e-8 )
 
 ### plot positions and vectors to make sure everything is OK
+
 # 3d plot objects
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
