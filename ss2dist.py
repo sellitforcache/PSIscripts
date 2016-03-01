@@ -617,6 +617,28 @@ def make_steps(ax,bins_in,avg_in,values_in,options=['log'],color=None,label='',y
 			else:
 				print "DATA LENGHTH NOT EVENLY DIVISIBLE BY COARSEN FACTOR, IGNORING..."
 
+
+class histogram:
+
+	def __init__(self,bins):
+		self.bins		= 	copy.deepcopy(bins)  # bins are edges
+		self.n_bins		=	len(bins)
+		self.values		=	numpy.zeros((self.n_bins-1,))
+		self.counts		= 	numpy.zeros((self.n_bins-1,))
+
+	def add(self,bin_val,weight):
+
+		# check if in bounds
+		valid = True
+		if bin_val < self.bins[0] or bin_val > self.bins[-1]:
+			valid = False
+
+		# add weight to bin if between bins
+		if valid:
+			dex = next((i for i, x in enumerate(bin_val < self.bins) if x), False)
+			self.values[dex] = self.values[dex] + weight
+			self.counts[dex] = self.counts[dex] + 1
+
 #
 #
 #
@@ -1000,7 +1022,7 @@ if typeflag:
 		surface_area=(x_bins[-1]-x_bins[0])*(y_bins[-1]-y_bins[0])
 	elif this_sc == 10172:
 		#  bin parameters
-		E_bins   = numpy.array([1e-6,600])
+		E_bins   = numpy.array([1e-12,1e-6,600])
 		#x_bins   = numpy.linspace(-45,45,181)
 		#x_bins   = numpy.linspace(-20,20,41)
 		#x_bins   = numpy.linspace(-6.76,-1.76,11)
@@ -1012,7 +1034,8 @@ if typeflag:
 		#y_bins   = numpy.linspace(-10,10,21)
 		y_bins   = numpy.linspace(-7,7,29)
 		#theta_bins = numpy.array([0,0.25,0.5,0.75,1.0,180])*numpy.pi/180.0   # 90 included as sanity check, ss should only write tracks in normal dir
-		theta_bins = numpy.array([0.00,0.15,0.30,0.60,1.00,1.50,2.0,2.5,3.0])*numpy.pi/180.0 
+		#theta_bins = numpy.array([0.00,0.15,0.30,0.60,1.00,1.50,2.0,2.5,3.0])*numpy.pi/180.0 
+		theta_bins = numpy.array([0.00,0.60,1.00,1.50,2.0,2.5,3.0])*numpy.pi/180.0 
 		#theta_bins  = make_equi_str(1.0*numpy.pi/180.0,10)
 		phi_bins = numpy.linspace(0,2*numpy.pi,2) 
 		dist     = numpy.zeros((  len(E_bins)-1 , len(theta_bins)-1 , len(phi_bins)-1 , len(y_bins)-1 , len(x_bins)-1 ),dtype=numpy.float64)
@@ -1022,6 +1045,7 @@ if typeflag:
 		surface_normal  = numpy.array([surface_plane[0],surface_plane[1],surface_plane[2]]) 
 		surface_vec1    = numpy.array([-surface_plane[1],surface_plane[0] ,  0.0])
 		surface_vec2    = numpy.array([0.0,0.0,1.0])
+		yz_rotation_degrees =  0.0
 		xy_rotation_degrees = -6.0
 		surface_normal_rot  = rotate_xy(surface_normal,xy_rotation_degrees)  # FOCUS is -6 degrees off plane
 		surface_vec1_rot    = rotate_xy(surface_vec1,  xy_rotation_degrees)  # FOCUS is -6 degrees off plane
@@ -1148,25 +1172,31 @@ if typeflag:
 		spec_res=256.
 		surface_area=(x_bins[-1]-x_bins[0])*(y_bins[-1]-y_bins[0])
 else:
-	dist            = d['dist']           
-	E_bins          = d['E_bins']         
-	x_bins          = d['x_bins']         
-	y_bins          = d['y_bins']         
-	theta_bins      = d['theta_bins']     
-	phi_bins        = d['phi_bins']       
-	surface_plane   = d['surface_plane']  
-	surface_normal  = d['surface_normal'] 
-	surface_vec1    = d['surface_vec1']   
-	surface_vec2    = d['surface_vec2']   
-	surface_nps     = d['surface_nps']    
-	total_weight    = d['total_weight']   
-	weight_ratio    = d['weight_ratio']   
-	total_tracks    = d['total_tracks']   
-	npstrack_ratio  = d['npstrack_ratio'] 
-	this_sc         = d['this_sc']        
-	#weights         = d['weights']        
-	#energies        = d['energies']       
-	track_count     = d['track_count']   
+	dist            	= d['dist']           
+	E_bins          	= d['E_bins']         
+	x_bins          	= d['x_bins']         
+	y_bins          	= d['y_bins']         
+	theta_bins      	= d['theta_bins']     
+	phi_bins        	= d['phi_bins']       
+	surface_plane   	= d['surface_plane']  
+	surface_normal  	= d['surface_normal']
+	surface_center  	= d['surface_center'] 
+	#surface_center  = numpy.array([  127.5438191,  -54.095,   0.  ])   # global again
+	surface_vec1    	= d['surface_vec1']   
+	surface_vec2    	= d['surface_vec2']
+	surface_normal_rot	= d['surface_normal_rot'] 
+	surface_vec1_rot	= d['surface_vec1_rot']   
+	surface_vec2_rot	= d['surface_vec2_rot']   
+	xy_rotation_degrees	= d['xy_rotation_degrees']
+	yz_rotation_degrees	= d['yz_rotation_degrees']
+	surface_nps     	= d['surface_nps']    
+	total_weight    	= d['total_weight']   
+	total_tracks    	= d['total_tracks']   
+	npstrack_ratio  	= d['npstrack_ratio'] 
+	this_sc         	= d['this_sc']            
+	histograms_curr		= d['histograms_curr']
+	histograms_flux		= d['histograms_flux']
+	spec_res			= d['spec_res']
 
 ### print some details
 if printflag:
@@ -1193,7 +1223,7 @@ if printflag:
 	print "    "
 	print "NORMAL HAS BEEN ROTATED (only for angular calculations, not position!):\n",
 	print "   X-Y:  % 4.2f degrees" % xy_rotation_degrees
-	print "   Y-Z:  % 4.2f degrees" % 0.0
+	print "   Y-Z:  % 4.2f degrees" % yz_rotation_degrees
 	print "    "
 
 ### check to make sure surface basis vectors are orthogonal
@@ -1217,13 +1247,13 @@ p2 = surface_center + surface_vec2*plane_size + surface_vec1*plane_size
 p3 = surface_center - surface_vec2*plane_size + surface_vec1*plane_size
 p4 = surface_center - surface_vec2*plane_size - surface_vec1*plane_size
 pts=numpy.vstack((p1,p2,p3,p4,p1))
-# 
-print surface_normal
-print surface_plane[0:3]
-print numpy.cross(surface_plane[0:3],surface_normal)
-print pts
-#
 ax.plot(pts[:,0],pts[:,1],pts[:,2],color='b')
+# 
+# print surface_normal
+# print surface_plane[0:3]
+# print numpy.cross(surface_plane[0:3],surface_normal)
+# print pts
+#
 # normal
 ax.quiver(surface_center[0],surface_center[1],surface_center[2],surface_normal[0],surface_normal[1],surface_normal[2],            color='b',pivot='tail',length=plane_size)
 ax.quiver(surface_center[0],surface_center[1],surface_center[2],  surface_vec1[0],  surface_vec1[1],  surface_vec1[2],            color='b',pivot='tail',length=plane_size)
@@ -1235,6 +1265,15 @@ ax.quiver(surface_center[0],surface_center[1],surface_center[2],  surface_vec2_r
 # show 
 plt.show()
 
+### make bins for histograms
+finebins=[]
+Emin=E_bins[0]
+Emax=E_bins[-1]
+for j in range(0,int(spec_res)+1):
+	finebins.append(Emin*numpy.power(Emax/Emin, j/spec_res))
+finebins = numpy.array(finebins)
+avg=(finebins[:-1]+finebins[1:])/2.0
+
 ### scan tracks
 if typeflag:
 
@@ -1242,19 +1281,14 @@ if typeflag:
 	last_nps = 0
 	x_avg = 0.
 	x_dex_avg = 0
-	track_count = []
-	energies=[]
 	bitarrays=[]
-	tme_list=[]
-	weights=[]
-	cosines=[]
-	wgt_avg = 0.0
+	histograms_curr=[]
+	histograms_flux=[]
+	wgt_avg = 0.5
 	count =1.0
 	for i in range(0,len(theta_bins)-1):
-	    energies.append([])
-	    weights.append([])
-	    cosines.append([])
-	    track_count.append(0)
+		histograms_curr.append(histogram(finebins))
+		histograms_flux.append(histogram(finebins))
 
 	if printflag:
 		print "\n============================\n"
@@ -1323,21 +1357,20 @@ if typeflag:
 			### increment array
 			if (E_dex < len(E_bins)-1) and (theta_dex < len(theta_bins)-1) and (phi_dex < len(phi_bins)-1) and (y_dex < len(y_bins)-1) and (x_dex < len(x_bins)-1) :
 				count = count+1
-				#wgt_avg = wgt_avg*(count-1.0)/count + this_wgt/count
-				#if this_wgt <= 20.0*wgt_avg:
-				if this_wgt>wgt_avg:
-					wgt_avg=this_wgt
-				x_avg = x_avg + x_bins[x_dex]
-				x_dex_avg = x_dex_avg + x_dex
-				#if this_wgt<=1.0:
-				if fluxflag:
-					dist[E_dex][theta_dex][phi_dex][y_dex][x_dex] = dist[E_dex][theta_dex][phi_dex][y_dex][x_dex] + this_wgt/this_vec[2]
-					cosines[theta_dex].append(this_vec[2])
-				else:
-					dist[E_dex][theta_dex][phi_dex][y_dex][x_dex] = dist[E_dex][theta_dex][phi_dex][y_dex][x_dex] + this_wgt
-				energies[theta_dex].append(this_E)
-				weights[theta_dex].append(this_wgt)
-				track_count[theta_dex] = track_count[theta_dex] +1
+				wgt_avg = wgt_avg*(count-1.0)/count + this_wgt/count
+				if this_wgt <= 20.0*wgt_avg:
+					#if this_wgt>wgt_avg:
+					#	wgt_avg=this_wgt
+					x_avg = x_avg + x_bins[x_dex]
+					x_dex_avg = x_dex_avg + x_dex
+					#if this_wgt<=1.0:
+					if fluxflag:
+						dist[E_dex][theta_dex][phi_dex][y_dex][x_dex] = dist[E_dex][theta_dex][phi_dex][y_dex][x_dex] + this_wgt/this_vec[2]
+						cosines[theta_dex].append(this_vec[2])
+					else:
+						dist[E_dex][theta_dex][phi_dex][y_dex][x_dex] = dist[E_dex][theta_dex][phi_dex][y_dex][x_dex] + this_wgt
+					histograms_curr[theta_dex].add(this_E,this_wgt)
+					histograms_flux[theta_dex].add(this_E,this_wgt/this_vec[2]/surface_area)
 				#if this_wgt < 0:
 				#	print this_wgt
 				#print "accepted",this_E,x_dex,y_dex,this_wgt
@@ -1355,21 +1388,20 @@ if typeflag:
 					print "x = %6.4E index %i is outside bin boundaries" % (this_pos[0],x_dex)
 	print "max weight",wgt_avg
 	### normalize dist to nps:
+	unit_area = (y_bins[1]-y_bins[0])*(x_bins[1]-x_bins[0])
+	surface_nps = abs(track.nps)
+	total_weight = 0.0
+	total_tracks = 0
+	for i in range(0,len(theta_bins)-1):
+		total_tracks = total_tracks + numpy.sum(histograms_curr[i].counts)
+		total_weight = total_weight + numpy.sum(histograms_curr[i].values)
+		histograms_curr[i].values = histograms_curr[i].values / surface_nps
+		histograms_flux[i].values = histograms_flux[i].values / surface_nps
+	npstrack_ratio = surface_nps/total_tracks
 	if fluxflag:
-		surface_nps = abs(track.nps)
-		total_weight = numpy.sum(weights)
-		unit_area = (y_bins[1]-y_bins[0])*(x_bins[1]-x_bins[0])
 		dist = dist / surface_nps / unit_area
-		weight_ratio = 0
-		total_tracks = numpy.sum(track_count)
-		npstrack_ratio = surface_nps/total_tracks
 	else:
-		surface_nps = abs(track.nps)
-		total_weight = numpy.sum(dist)
 		dist = dist / surface_nps
-		weight_ratio = 0
-		total_tracks = numpy.sum(track_count)
-		npstrack_ratio = surface_nps/total_tracks
 
 
 	### dump array to file
@@ -1385,18 +1417,23 @@ if typeflag:
 	d['theta_bins']=theta_bins
 	d['phi_bins']=phi_bins
 	d['surface_plane']=surface_plane
+	d['surface_center']=surface_center
 	d['surface_normal']=surface_normal
 	d['surface_vec1']=surface_vec1
 	d['surface_vec2']=surface_vec2
+	d['surface_normal_rot']=surface_normal_rot
+	d['surface_vec1_rot']=surface_vec1_rot
+	d['surface_vec2_rot']=surface_vec2_rot
+	d['xy_rotation_degrees']=xy_rotation_degrees
+	d['yz_rotation_degrees']=yz_rotation_degrees
 	d['surface_nps']=surface_nps
 	d['total_weight']=total_weight
-	d['weight_ratio']=weight_ratio
 	d['total_tracks']=total_tracks
 	d['npstrack_ratio']=npstrack_ratio
 	d['this_sc']=this_sc
-	#d['weights']=weights
-	#d['energies']=energies
-	d['track_count']=track_count
+	d['histograms_curr']=histograms_curr
+	d['histograms_flux']=histograms_flux
+	d['spec_res']=spec_res
 
 	cPickle.dump(d,f)
 	f.flush()
@@ -1410,44 +1447,12 @@ if printflag:
 if typeflag == 1:
 	ss.close()
 
-### plot stuff
-#E_bin = 1
-#theta_bin = 5
-#phi_bin = 0
 
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 plt.rc('font', size=16)
 
-# 
-#
-# THIS DOES SPECTRUM PLOTS FOR EACH SPATIAL BIN (ASSUMES SINGLE/INTEGRATED ANGULAR BINS)
-#
-#
-#jet = plt.get_cmap('jet') 
-#cNorm  = colors.Normalize(vmin=0, vmax=len(x_bins))
-#scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=jet)
-#fig=plt.figure()
-#axz=fig.add_subplot(111)
-#axz.set_xlabel(r'Energy (MeV)')
-#axz.set_ylabel(r'Neutron Current (n mAs$^{-1}$)')
-#axz.grid(1)
-#for x_dex in range(0,len(x_bins)-1):
-#	total=[]
-#	for E_dex in range(0,len(E_bins)-1):
-#		total.append(dist[E_dex][0][0][0][x_dex])
-#	#print total
-#	area = (x_bins[x_dex+1]-x_bins[x_dex])*(y_bins[1]-y_bins[0])
-#	total=numpy.array(total)*charge_per_milliamp
-#	colorVal = scalarMap.to_rgba(len(x_bins)-x_dex)  # reverse to blue is the "cooler" side
-#	#make_steps(axz,E_bins,[0],total,label='x= %3.2f - %3.2f cm'%(x_bins[x_dex],x_bins[x_dex+1]),options=['log'])
-#	axz.semilogx(E_bins[:-1],total,label='x = ( %3.2f , %3.2f ) cm'%(x_bins[x_dex],x_bins[x_dex+1]),drawstyle='steps-post',linewidth=2,color=colorVal)
-#	
-#plt.legend(loc=2)
-#plt.show()
 
-
-#print "avg wgt",wgt_avg
 ### images
 zap_x1=[-6.6, -19.1, -19.1, -6.6, -6.6]
 zap_x2=[4.6,19.1 ,19.1 ,4.6, 4.6]
@@ -1504,68 +1509,13 @@ for theta_bin in range(0,len(theta_bins)-1):
 		pylab.show()
 
 
-### line plots
-#f2 = plt.figure()
-#ax2 = f2.add_subplot(111)
-#avg=(y_bins[:-1]+y_bins[1:])/2.0
-#ax2.plot(avg,dist[E_bin][theta_bin][phi_bin][:][:])
-
-### spectrum plots 1
-#f3 = plt.figure()
-#ax3 = f3.add_subplot(211)
-#ax4 = f3.add_subplot(212)
-#avg=(E_bins[:-1]+E_bins[1:])/2.0
-#for j in range(0,len(y_bins)-1):
-#	for k in range(0,len(x_bins)-1):
-#		E_vec=[]
-#		for i in range(0,len(E_bins)-1):
-#			E_vec.append(dist[i][theta_bin][phi_bin][j][k])
-#		ax3.semilogx(avg,E_vec,label='x (%4.2f,%4.2f) y (%4.2f,%4.2f))'%(x_bins[k],x_bins[k+1],y_bins[j],y_bins[j+1]),drawstyle='steps-post')
-#		if j==0 and k==0:
-#			base=numpy.array(E_vec)
-#		ax4.semilogx(avg,numpy.divide(numpy.array(E_vec),base),label='x (%4.2f,%4.2f) y (%4.2f,%4.2f))'%(x_bins[k],x_bins[k+1],y_bins[j],y_bins[j+1]),drawstyle='steps-post')
-#
-#handles, labels = ax3.get_legend_handles_labels()
-#ax3.legend(handles,labels,loc=1,prop={'size':12})
-#ax3.set_title('Currents')
-#handles, labels = ax4.get_legend_handles_labels()
-#ax4.legend(handles,labels,loc=1,prop={'size':12})
-#ax4.set_title('Ratios')
-#pylab.show()
-
-
-### spectrum plots 2
+### spectrum plots 
 f3 = plt.figure()
 gs = gridspec.GridSpec(3, 4)
 ax3 = f3.add_subplot(gs[0,:-1])
 ax4 = f3.add_subplot(gs[1,:-1])
 #ax5 = f3.add_subplot(gs[2,:-1])
 ax6 = f3.add_subplot(gs[2,:-1])
-
-try:
-	spec_res
-except NameError:
-	spec_res = 1024
-else:
-	pass
-
-#all_energies=numpy.array([])
-#all_weights=numpy.array([])
-#all_cosines=numpy.array([])
-#for i in range(0,len(theta_bins)-1):
-#	all_energies = numpy.append(all_energies,numpy.array(energies[i]))
-#	all_weights  = numpy.append(all_weights,numpy.array(weights[i]))
-#	if fluxflag:
-#		all_cosines  = numpy.append(all_cosines,numpy.array(cosines[i]))
-	
-finebins=[]
-Emin=E_bins[0]
-Emax=E_bins[-1]
-for j in range(0,int(spec_res)+1):
-	finebins.append(Emin*numpy.power(Emax/Emin, j/spec_res))
-finebins = numpy.array(finebins)
-avg=(finebins[:-1]+finebins[1:])/2.0
-
 
 cm = plt.get_cmap('jet') 
 cNorm  = colors.Normalize(vmin=0, vmax=len(theta_bins)-1)
@@ -1577,15 +1527,14 @@ area=(y_bins[-1]-y_bins[0])*(x_bins[-1]-x_bins[0])
 for i in range(0,len(theta_bins)-1):
 	sa = 1 #numpy.pi * ( theta_bins[i+1]*theta_bins[i+1] - theta_bins[i]*theta_bins[i] )
 	if fluxflag:
-		h = numpy.histogram(energies[i],bins=finebins,weights=numpy.divide(weights[i],cosines[i])/area)
+		h = histograms_flux[i].values
 	else:
-		h = numpy.histogram(energies[i],bins=finebins,weights=weights[i])
-	hist.append(numpy.array(h[0]) / surface_nps)
-	spec = numpy.divide(hist[i],numpy.diff(finebins))
-	err.append(1.0/numpy.sqrt(len(energies[i])))
+		h = histograms_curr[i].values
+
+	spec = numpy.divide(h,numpy.diff(histograms_flux[i].bins))
 	colorVal = scalarMap.to_rgba(i)
-	ax3.semilogx(finebins[:-1],numpy.divide(spec   ,sa),color=colorVal,label=r'$\theta$ = %4.2f - %4.2f'%(theta_bins[i]*180.0/numpy.pi,theta_bins[i+1]*180.0/numpy.pi),drawstyle='steps-post',linewidth=1)
-	ax4.semilogx(finebins[:-1],numpy.divide(hist[i],sa),color=colorVal,label=r'$\theta$ = %4.2f - %4.2f'%(theta_bins[i]*180.0/numpy.pi,theta_bins[i+1]*180.0/numpy.pi),drawstyle='steps-post',linewidth=1)
+	ax3.semilogx(histograms_curr[i].bins[:-1],numpy.divide(spec,sa),color=colorVal,label=r'$\theta$ = %4.2f - %4.2f'%(theta_bins[i]*180.0/numpy.pi,theta_bins[i+1]*180.0/numpy.pi),drawstyle='steps-post',linewidth=1)
+	ax4.semilogx(histograms_curr[i].bins[:-1],numpy.divide(h,   sa),color=colorVal,label=r'$\theta$ = %4.2f - %4.2f'%(theta_bins[i]*180.0/numpy.pi,theta_bins[i+1]*180.0/numpy.pi),drawstyle='steps-post',linewidth=1)
 
 handles, labels = ax3.get_legend_handles_labels()
 ax3.legend(handles,labels,loc=1,prop={'size':12}, ncol=2, bbox_to_anchor=(1.4, 1.1))
@@ -1593,47 +1542,10 @@ ax3.legend(handles,labels,loc=1,prop={'size':12}, ncol=2, bbox_to_anchor=(1.4, 1
 #ax4.legend(handles,labels,loc=1,prop={'size':12}, ncol=2, bbox_to_anchor=(1.4, 1.1))
 
 
-
 f=open('%d.theta_spec'%this_sc,'w')
 cPickle.dump([finebins,hist,err,y_bins,x_bins,theta_bins],f)
 f.close()
 
-### average spec
-#finebins_a=numpy.linspace(0,16,spec_res)
-#finebins_e=to_energy(finebins_a)
-#finebins_e=finebins_e[::-1]
-#finebins_e[-1]=600.0
-#avg_e=(finebins_e[:-1]+finebins_e[1:])/2.0
-#if fluxflag:
-#	h = numpy.histogram(all_energies,bins=finebins_e,weights=numpy.divide(all_weights,all_cosines)/surface_area)
-#else:
-#	h = numpy.histogram(all_energies,bins=finebins_e,weights=all_weights)
-#h_n = numpy.histogram(all_energies,bins=finebins)
-#hist = numpy.array(h[0],dtype=numpy.float64)/surface_nps
-#err=numpy.divide(1.0,numpy.sqrt(h_n[0]))
-#
-##cumulativeE = (numpy.cumsum(hist)) / numpy.sum(hist)
-##cumulativeE = numpy.insert(cumulativeE,0,0)  # add zero to beginning!
-##ax5.semilogx(finebins_e,cumulativeE,linewidth=1)
-#spec = numpy.divide(hist,numpy.diff(finebins_e))
-##print "AVERAGE ENERGY",numpy.average(avg_e,weights=spec),"MeV",to_temperature(numpy.average(avg_e,weights=spec)),"K"
-##n=numpy.where(spec==numpy.max(spec))[0][0]
-##print "MOST PROBABLE ENERGY",avg_e[n],"MeV",to_temperature(avg_e[n]),"K"
-#ax6.semilogx(finebins_e[:-1],spec,drawstyle='steps-post',linewidth=1)
-#ax6.set_xlabel(r'Wavelength (\AA)')
-#ax6.set_xlabel(r'Energy (MeV)')
-#
-#f=open('%d.total_spec'%this_sc,'w')
-#cPickle.dump([finebins_e,hist,spec,err,y_bins,x_bins,theta_bins],f)
-#f.close()
-#
-#### spec plot labels, etc
-##handles, labels = ax3.get_legend_handles_labels()
-##ax3.legend(handles,labels,loc=1,prop={'size':12})
-##handles, labels = ax4.get_legend_handles_labels()
-##ax4.legend(handles,labels,loc=1,prop={'size':12})
-#ax3.set_xlabel(r'Energy (MeV)')
-#ax4.set_xlabel(r'Energy (MeV)')
 
 if fluxflag:
 	ax3.set_ylabel(r'$\Phi$(E) dE (n p$^{-1}$ cm$^{-2}$ MeV$^{-1}$ Str$^{-1}$)')
