@@ -1171,7 +1171,7 @@ if typeflag:
 		# spectrum plot
 		spec_res=256.
 		surface_area=(x_bins[-1]-x_bins[0])*(y_bins[-1]-y_bins[0])
-	elif this_sc == 51030:
+	elif this_sc == -51030:
 		#  bin parameters
 		E_bins   = numpy.array([1e-12,1e-6,1.0,600])
 		#x_bins   = numpy.linspace(-45,45,181)
@@ -1193,8 +1193,8 @@ if typeflag:
 		#  surface plane parameters
 		surface_plane   = numpy.array([0.970295727808 , -0.241921898123, 0.0 ,-498.288785066 ])   # plane, GLOBAL coordinates
 		surface_center  = numpy.array([  -492.3353727, 85.06,  0.0  ])   # global again
-		surface_normal  = numpy.array([surface_plane[0],surface_plane[1],surface_plane[2]]) 
-		surface_vec1    = numpy.array([-surface_plane[1],surface_plane[0] ,  0.0])
+		surface_normal  = -numpy.array([surface_plane[0],surface_plane[1],surface_plane[2]]) 
+		surface_vec1    = -numpy.array([-surface_plane[1],surface_plane[0] ,  0.0])
 		surface_vec2    = numpy.array([0.0,0.0,1.0])
 		yz_rotation_degrees =  0.0
 		xy_rotation_degrees =  0.0
