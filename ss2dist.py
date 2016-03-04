@@ -635,7 +635,7 @@ class histogram:
 
 		# add weight to bin if between bins
 		if valid:
-			dex = next((i for i, x in enumerate(bin_val < self.bins) if x), False)
+			dex = next((i for i, x in enumerate(bin_val < self.bins) if x), False) - 1
 			self.values[dex] = self.values[dex] + weight
 			self.counts[dex] = self.counts[dex] + 1
 
@@ -1022,7 +1022,7 @@ if typeflag:
 		surface_area=(x_bins[-1]-x_bins[0])*(y_bins[-1]-y_bins[0])
 	elif this_sc == 10172:
 		#  bin parameters
-		E_bins   = numpy.array([1e-12,1e-6,600])
+		E_bins   = numpy.array([1e-12,1e-6,1.0,600])
 		#x_bins   = numpy.linspace(-45,45,181)
 		#x_bins   = numpy.linspace(-20,20,41)
 		#x_bins   = numpy.linspace(-6.76,-1.76,11)
@@ -1034,8 +1034,8 @@ if typeflag:
 		#y_bins   = numpy.linspace(-10,10,21)
 		y_bins   = numpy.linspace(-7,7,29)
 		#theta_bins = numpy.array([0,0.25,0.5,0.75,1.0,180])*numpy.pi/180.0   # 90 included as sanity check, ss should only write tracks in normal dir
-		#theta_bins = numpy.array([0.00,0.15,0.30,0.60,1.00,1.50,2.0,2.5,3.0])*numpy.pi/180.0 
-		theta_bins = numpy.array([0.00,0.60,1.00,1.50,2.0,2.5,3.0])*numpy.pi/180.0 
+		theta_bins = numpy.array([0.00,0.15,0.30,0.60,1.00,1.50,2.0,2.5,3.0])*numpy.pi/180.0 
+		#theta_bins = numpy.array([0.00,0.60,1.00,1.50,2.0,2.5,3.0])*numpy.pi/180.0 
 		#theta_bins  = make_equi_str(1.0*numpy.pi/180.0,10)
 		phi_bins = numpy.linspace(0,2*numpy.pi,2) 
 		dist     = numpy.zeros((  len(E_bins)-1 , len(theta_bins)-1 , len(phi_bins)-1 , len(y_bins)-1 , len(x_bins)-1 ),dtype=numpy.float64)
@@ -1171,6 +1171,39 @@ if typeflag:
 		# spectrum plot
 		spec_res=256.
 		surface_area=(x_bins[-1]-x_bins[0])*(y_bins[-1]-y_bins[0])
+	elif this_sc == 51030:
+		#  bin parameters
+		E_bins   = numpy.array([1e-12,1e-6,1.0,600])
+		#x_bins   = numpy.linspace(-45,45,181)
+		#x_bins   = numpy.linspace(-20,20,41)
+		#x_bins   = numpy.linspace(-6.76,-1.76,11)
+		x_bins   = numpy.linspace(-11,11,45)
+		#diff     = x_bins[1]-x_bins[0]
+		#x_bins   = numpy.insert(x_bins,0,x_bins[0] -diff)
+		#x_bins   = numpy.append(x_bins,  x_bins[-1]+diff) 
+		#y_bins   = numpy.linspace(-45,45,181)
+		#y_bins   = numpy.linspace(-10,10,21)
+		y_bins   = numpy.linspace(-7,7,29)
+		#theta_bins = numpy.array([0,0.25,0.5,0.75,1.0,180])*numpy.pi/180.0   # 90 included as sanity check, ss should only write tracks in normal dir
+		theta_bins = numpy.array([0.0,2.0,10.0,80.0])*numpy.pi/180.0 
+		#theta_bins = numpy.array([0.00,0.60,1.00,1.50,2.0,2.5,3.0])*numpy.pi/180.0 
+		#theta_bins  = make_equi_str(1.0*numpy.pi/180.0,10)
+		phi_bins = numpy.linspace(0,2*numpy.pi,2) 
+		dist     = numpy.zeros((  len(E_bins)-1 , len(theta_bins)-1 , len(phi_bins)-1 , len(y_bins)-1 , len(x_bins)-1 ),dtype=numpy.float64)
+		#  surface plane parameters
+		surface_plane   = numpy.array([0.970295727808 , -0.241921898123, 0.0 ,-498.288785066 ])   # plane, GLOBAL coordinates
+		surface_center  = numpy.array([  -492.3353727, 85.06,  0.0  ])   # global again
+		surface_normal  = numpy.array([surface_plane[0],surface_plane[1],surface_plane[2]]) 
+		surface_vec1    = numpy.array([-surface_plane[1],surface_plane[0] ,  0.0])
+		surface_vec2    = numpy.array([0.0,0.0,1.0])
+		yz_rotation_degrees =  0.0
+		xy_rotation_degrees =  0.0
+		surface_normal_rot  = rotate_xy(surface_normal,xy_rotation_degrees) 
+		surface_vec1_rot    = rotate_xy(surface_vec1,  xy_rotation_degrees) 
+		surface_vec2_rot    = rotate_xy(surface_vec2,  xy_rotation_degrees) 
+		# spectrum plot
+		spec_res=256.
+		surface_area=(x_bins[-1]-x_bins[0])*(y_bins[-1]-y_bins[0])
 else:
 	dist            	= d['dist']           
 	E_bins          	= d['E_bins']         
@@ -1293,7 +1326,7 @@ if typeflag:
 	if printflag:
 		print "\n============================\n"
 		print "Binning tracks... "
-	for i in progress(range(1,ss.nrss)):
+	for i in progress(range(1,4000000)): #progress(range(1,ss.nrss)):
 		
 		### get track global position/direction
 		track = ss.next_track()
@@ -1509,72 +1542,60 @@ for theta_bin in range(0,len(theta_bins)-1):
 		pylab.show()
 
 
-### spectrum plots 
-f3 = plt.figure()
-gs = gridspec.GridSpec(3, 4)
-ax3 = f3.add_subplot(gs[0,:-1])
-ax4 = f3.add_subplot(gs[1,:-1])
-#ax5 = f3.add_subplot(gs[2,:-1])
-ax6 = f3.add_subplot(gs[2,:-1])
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
+plt.rc('font', size=18)
 
-cm = plt.get_cmap('jet') 
+
+### spectrum plots 
+fig  = plt.figure()
+ax1 = fig.add_subplot(111)
+cm  = plt.get_cmap('jet') 
 cNorm  = colors.Normalize(vmin=0, vmax=len(theta_bins)-1)
 scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
-
-hist=[]
-err=[]
-area=(y_bins[-1]-y_bins[0])*(x_bins[-1]-x_bins[0])
+sa = False
 for i in range(0,len(theta_bins)-1):
-	sa = 1 #numpy.pi * ( theta_bins[i+1]*theta_bins[i+1] - theta_bins[i]*theta_bins[i] )
+	sa = numpy.pi * ( theta_bins[i+1]*theta_bins[i+1] - theta_bins[i]*theta_bins[i] )
 	if fluxflag:
 		h = histograms_flux[i].values
 	else:
 		h = histograms_curr[i].values
-
+	avg  = (histograms_curr[i].bins[:-1]+histograms_curr[i].bins[1:])/2.0
 	spec = numpy.divide(h,numpy.diff(histograms_flux[i].bins))
+	spec = numpy.multiply(spec,avg)
+	if sa:
+		spec = spec / sa
 	colorVal = scalarMap.to_rgba(i)
-	ax3.semilogx(histograms_curr[i].bins[:-1],numpy.divide(spec,sa),color=colorVal,label=r'$\theta$ = %4.2f - %4.2f'%(theta_bins[i]*180.0/numpy.pi,theta_bins[i+1]*180.0/numpy.pi),drawstyle='steps-post',linewidth=1)
-	ax4.semilogx(histograms_curr[i].bins[:-1],numpy.divide(h,   sa),color=colorVal,label=r'$\theta$ = %4.2f - %4.2f'%(theta_bins[i]*180.0/numpy.pi,theta_bins[i+1]*180.0/numpy.pi),drawstyle='steps-post',linewidth=1)
+	ax1.semilogx(avg,spec,color=colorVal,label=r'$\theta$ = %4.2f - %4.2f (%4.2E sr)'%(theta_bins[i]*180.0/numpy.pi,theta_bins[i+1]*180.0/numpy.pi,sa),linewidth=2)
 
-handles, labels = ax3.get_legend_handles_labels()
-ax3.legend(handles,labels,loc=1,prop={'size':12}, ncol=2, bbox_to_anchor=(1.4, 1.1))
-#handles, labels = ax4.get_legend_handles_labels()
-#ax4.legend(handles,labels,loc=1,prop={'size':12}, ncol=2, bbox_to_anchor=(1.4, 1.1))
+handles, labels = ax1.get_legend_handles_labels()
+ax1.legend(handles,labels,loc=1,prop={'size':16}, ncol=2)#, bbox_to_anchor=(1.4, 1.1))
 
-
-f=open('%d.theta_spec'%this_sc,'w')
-cPickle.dump([finebins,hist,err,y_bins,x_bins,theta_bins],f)
-f.close()
-
-
-if fluxflag:
-	ax3.set_ylabel(r'$\Phi$(E) dE (n p$^{-1}$ cm$^{-2}$ MeV$^{-1}$ Str$^{-1}$)')
-	ax4.set_ylabel(r'$\Phi$(E) (n p$^{-1}$ cm$^{-2} Str$^{-1}$$)')
-	ax6.set_ylabel(r'$\Phi$(E) dE (n p$^{-1}$ cm$^{-2}$ MeV$^{-1}$ Str$^{-1}$)')
+if fluxflag and sa:
+	ax1.set_ylabel(r'$\Phi$(E) dE d$\Omega$ (n p$^{-1}$ cm$^{-2}$ log(MeV)$^{-1}$ Str$^{-1}$)')
+elif fluxflag:
+	ax1.set_ylabel(r'$\Phi$(E) dE (n p$^{-1}$ cm$^{-2}$ log(MeV)$^{-1}$)')
+elif sa:
+	ax1.set_ylabel(r'$\Psi$(E) dE d$\Omega$ (n p$^{-1}$ log(MeV)$^{-1}$ Str$^{-1}$)')
 else:
-	ax3.set_ylabel(r'$\Phi$(E) dE (n p$^{-1}$ MeV$^{-1}$ )')
-	ax4.set_ylabel(r'$\Phi$(E) (n p$^{-1}$               )')
-	ax6.set_ylabel(r'$\Phi$(E) dE (n p$^{-1}$ MeV$^{-1}$ )')
-#ax5.set_ylabel(r'Cumulative Probability')
-#ax5.set_ylim([0,1])
-ax3.grid()
-ax4.grid()
-#ax5.grid()
-ax6.grid()
-
-ax3.set_xlim([1e-10,1e-4])
-ax4.set_xlim([1e-10,1e-4])
-ax6.set_xlim([1e-10,1e-4])
+	ax1.set_ylabel(r'$\Psi$(E) dE (n p$^{-1}$ log(MeV)$^{-1}$)')
+ax1.set_xlabel(r'Energy (MeV)')
+ax1.grid()
+#ax1.set_xlim([1e-10,1e-4])
 
 pylab.show()
 
 
+#f=open('%d.theta_spec'%this_sc,'w')
+#cPickle.dump([finebins,hist,err,y_bins,x_bins,theta_bins],f)
+#f.close()
 
-import scipy.io
-data_to_save={}
-for i in range(0,len(theta_bins)-1):
-	string = 'dist_%3.2E_%3.2E'%(theta_bins[i],theta_bins[i+1])
-	data_to_save[string]=dist[0][i][phi_bin][:][:]
-data_to_save['y_bins']=y_bins
-data_to_save['x_bins']=x_bins
-scipy.io.savemat('FOCUS_divergence.mat',data_to_save)
+#import scipy.io
+#data_to_save={}
+#for i in range(0,len(theta_bins)-1):
+#	string = 'dist_%3.2E_%3.2E'%(theta_bins[i],theta_bins[i+1])
+#	data_to_save[string]=dist[0][i][phi_bin][:][:]
+#data_to_save['y_bins']=y_bins
+#data_to_save['x_bins']=x_bins
+#scipy.io.savemat('FOCUS_divergence.mat',data_to_save)
+#
