@@ -1284,8 +1284,8 @@ if typeflag:
 		sphere = True
 		#  bin parameters
 		E_bins   = numpy.array([1e-12,1e-6,1.0,600])
-		x_bins   = numpy.linspace(0,1.0*numpy.pi,17)  # polar theta
-		y_bins   = numpy.linspace(0,2.0*numpy.pi,17)  # azimuthal phi
+		x_bins   = numpy.linspace(0,2.0*numpy.pi,17)  # azimuthal phi
+		y_bins   = numpy.linspace(0,1.0*numpy.pi,17)  # polar theta
 		#theta_bins = (numpy.pi - make_equi_str(1.0*numpy.pi/180.0,10) )#*numpy.pi/180.0
 		theta_bins = (180.0    - numpy.array([0.0,2.0,10.0,20.0,30.0,40.0,50.0,60.0,70.0,80.,90.0,180.0]))*numpy.pi/180.0 
 		theta_bins = theta_bins[::-1]
@@ -1360,11 +1360,16 @@ if printflag:
 	print "    "
 	print "Phi (azimuthal) bin boundaries (degrees)\n", phi_bins*180.0/numpy.pi
 	print "    "
-	print "Y bin boundaries (cm)\n", y_bins
+	if sphere:
+		print "Y (polar) bin boundaries (radians)\n", y_bins
+		print "    "
+		print "X (azimuthal) bin boundaries (radians)\n", x_bins
+	else:
+		print "Y bin boundaries (cm)\n", y_bins
+		print "    "
+		print "X bin boundaries (cm)\n", x_bins
 	print "    "
-	print "X bin boundaries (cm)\n", x_bins
-	print "    "
-	print "NORMAL HAS BEEN ROTATED (only for angular calculations, not position!):\n",
+	print "NORMAL HAS BEEN ROTATED (only for angular valriable calculations, not position!):\n",
 	print "   X-Y:  % 4.2f degrees" % xy_rotation_degrees
 	print "   Y-Z:  % 4.2f degrees" % yz_rotation_degrees
 	print "    "
@@ -1528,7 +1533,7 @@ if typeflag:
 				sphere_phi		= numpy.arctan2(surface_normal[1],surface_normal[0])
 				if sphere_phi < 0.0:
 					sphere_phi = 2.0*numpy.pi + sphere_phi
-				this_pos        = numpy.array([sphere_theta,sphere_phi])
+				this_pos        = numpy.array([sphere_phi,sphere_theta])
 				this_vec = numpy.array([numpy.dot(surface_vec1,vec),numpy.dot(surface_vec2,vec),numpy.dot(surface_normal_rot,vec)])
 			else:
 				### transform vector to normal system
