@@ -690,6 +690,7 @@ obj_bin = 1
 
 printflag = True
 errorflag = True
+sphere = False
 
 if printflag:
 	progress = progressbar.ProgressBar()
@@ -1278,14 +1279,15 @@ if typeflag:
 		# spectrum plot
 		spec_res=256.
 		surface_area=(x_bins[-1]-x_bins[0])*(y_bins[-1]-y_bins[0])
-	elif this_sc == 10451:
+	elif this_sc == 10541:
 		# sphere flag
 		sphere = True
 		#  bin parameters
 		E_bins   = numpy.array([1e-12,1e-6,1.0,600])
 		x_bins   = numpy.linspace(0,1.0*numpy.pi,17)  # polar theta
 		y_bins   = numpy.linspace(0,2.0*numpy.pi,17)  # azimuthal phi
-		theta_bins = (180.0-numpy.array([0.0,2.0,10.0,80.,90.0,180.0]))*numpy.pi/180.0 
+		#theta_bins = (numpy.pi - make_equi_str(1.0*numpy.pi/180.0,10) )#*numpy.pi/180.0
+		theta_bins = (180.0    - numpy.array([0.0,2.0,10.0,20.0,30.0,40.0,50.0,60.0,70.0,80.,90.0,180.0]))*numpy.pi/180.0 
 		theta_bins = theta_bins[::-1]
 		phi_bins = numpy.linspace(0,2*numpy.pi,2) 
 		dist     = numpy.zeros((  len(E_bins)-1 , len(theta_bins)-1 , len(phi_bins)-1 , len(y_bins)-1 , len(x_bins)-1 ),dtype=numpy.float64)
@@ -1790,7 +1792,7 @@ spec_total = spec_total / sa
 if wavelength:
 	make_steps(ax2,to_wavelength(histograms_curr[0].bins),[0],spec_total,options=['lin'],color='b',label=r'$\theta$ = %4.2f - %4.2f (%4.2E sr)'%(theta_bins[0]*180.0/numpy.pi,theta_bins[-1]*180.0/numpy.pi,sa),linewidth=2)
 else:
-	print histograms_curr[0].bins
+	#print histograms_curr[0].bins
 	make_steps(ax2,histograms_curr[0].bins,               [0],spec_total,options=['log'],color='b',label=r'$\theta$ = %4.2f - %4.2f (%4.2E sr)'%(theta_bins[0]*180.0/numpy.pi,theta_bins[-1]*180.0/numpy.pi,sa),linewidth=2)
 
 
@@ -1951,7 +1953,10 @@ probs = numpy.array(angular_weight_totals)/numpy.sum(angular_weight_totals)
 # files
 name='dist_data.sdef'
 print "\nWriting MCNP SDEF to '"+name+"'..."
-print "SDEF plane offset by % 3.2E...\n"%offset_factor
+if sphere:
+	pass
+else:
+	print "SDEF plane offset by % 3.2E...\n"%offset_factor
 f=open(name,'w')
 # write easy stuff
 f.write('c\n')
@@ -1959,33 +1964,46 @@ f.write('c SDEF from ss2dist.py, '+time.strftime("%d.%m.%Y, %H:%M")+'\n')
 f.write('c wssa name = '+filename+'\nc surface = %5d\n'%this_sc)
 f.write('c\n')
 f.write('sdef    par=n\n')
-f.write('c       sur=%5d\n'%this_sc)
-f.write('        axs=0 0 1\n')
-f.write('        vec=1 0 0\n')
-f.write('        tr=999\n')
-f.write('        x=0.0\n')
-f.write('        y=d998\n')
-f.write('        z=d997\n')
+if sphere:
+	f.write('        sur=%5d\n'%this_sc)
+	f.write('        axs=0 0 1\n')
+	f.write('c        vec=1 0 0\n')
+	f.write('c        tr=999\n')
+	f.write('        rad=%10.8E\n'%sphere_radius)
+else:
+	f.write('c        sur=%5d\n'%this_sc)
+	f.write('        axs=0 0 1\n')
+	f.write('        vec=1 0 0\n')
+	f.write('        tr=999\n')
+	f.write('        x=0.0\n')
+	f.write('        y=d998\n')
+	f.write('        z=d997\n')
 f.write('        dir=d996\n')
 f.write('        erg=fdir=d995\n')
 f.write('        wgt=%10.8E\n'%numpy.sum(angular_weight_totals))
 f.write('c \n')
 f.write('c TRANSFORM\n')
 f.write('c \n')
-f.write('*tr999  % 6.7E  % 6.7E  % 6.7E\n'%((1.0+offset_factor)*surface_center[0],(1.0+offset_factor)*surface_center[1],(1.0+offset_factor)*surface_center[2]))
-f.write('        % 6.7E  % 6.7E  % 6.7E\n'%(surface_rotation_xy,90-surface_rotation_xy,90))
-f.write('        % 6.7E  % 6.7E  % 6.7E\n'%(90+surface_rotation_xy,surface_rotation_xy,90))
-f.write('        % 6.7E  % 6.7E  % 6.7E\n'%(90,90,0))
-f.write('c \n')
-f.write('c Y\n')
-f.write('c \n')
-f.write('SI998  A  % 6.7E  1024i  % 6.7E\n'%(x_bins[0],x_bins[-1]))
-f.write('SP998      1.000000  1024r  1.000000\n')
-f.write('c \n')
-f.write('c Z\n')
-f.write('c \n')
-f.write('SI997  A  % 6.7E  1024i  % 6.7E\n'%(y_bins[0],y_bins[-1]))
-f.write('SP997      1.000000  1024r  1.000000\n')
+if sphere:
+	f.write('c *tr999  % 6.7E  % 6.7E  % 6.7E\n'%(surface_center[0],surface_center[1],surface_center[2]))
+	f.write('c         % 6.7E  % 6.7E  % 6.7E\n'%(0,90,90))
+	f.write('c         % 6.7E  % 6.7E  % 6.7E\n'%(90,0,90))
+	f.write('c         % 6.7E  % 6.7E  % 6.7E\n'%(90,90,0))
+else:
+	f.write('*tr999  % 6.7E  % 6.7E  % 6.7E\n'%((1.0+offset_factor)*surface_center[0],(1.0+offset_factor)*surface_center[1],(1.0+offset_factor)*surface_center[2]))
+	f.write('        % 6.7E  % 6.7E  % 6.7E\n'%(surface_rotation_xy,90-surface_rotation_xy,90))
+	f.write('        % 6.7E  % 6.7E  % 6.7E\n'%(90+surface_rotation_xy,surface_rotation_xy,90))
+	f.write('        % 6.7E  % 6.7E  % 6.7E\n'%(90,90,0))
+	f.write('c \n')
+	f.write('c Y\n')
+	f.write('c \n')
+	f.write('SI998  A  % 6.7E  1024i  % 6.7E\n'%(x_bins[0],x_bins[-1]))
+	f.write('SP998      1.000000  1024r  1.000000\n')
+	f.write('c \n')
+	f.write('c Z\n')
+	f.write('c \n')
+	f.write('SI997  A  % 6.7E  1024i  % 6.7E\n'%(y_bins[0],y_bins[-1]))
+	f.write('SP997      1.000000  1024r  1.000000\n')
 f.write('c \n')
 f.write('c ANGULAR DISTRIBUTION\n')
 f.write('c \n')
@@ -1994,36 +2012,42 @@ string0 = 'SI996   S  '
 f.write(string0)
 total_len = len(string0)
 for k in range(0,len(theta_bins)-1):
-	string1=' D%d'%(k+800)
-	total_len = total_len + len(string1)
-	if total_len > 80:
-		f.write('\n'+' '*max(5,len(string0)))
-		total_len = len(string1)+max(5,len(string0))
-	f.write(string1)
+	if probs[k]>0.0:
+		string1=' D%d'%(k+800)
+		total_len = total_len + len(string1)
+		if total_len > 80:
+			f.write('\n'+' '*max(5,len(string0)))
+			total_len = len(string1)+max(5,len(string0))
+		f.write(string1)
 f.write('\n')
 string0 = 'SP996      '
 f.write(string0)
 total_len = len(string0)
 for k in range(0,len(theta_bins)-1):
-	string1=' %6.4E'%probs[k]
-	total_len = total_len + len(string1)
-	if total_len > 80:
-		f.write('\n'+' '*max(5,len(string0)))
-		total_len = len(string1)+max(5,len(string0))
-	f.write(string1)
+	if probs[k]>0.0:
+		string1=' %6.4E'%probs[k]
+		total_len = total_len + len(string1)
+		if total_len > 80:
+			f.write('\n'+' '*max(5,len(string0)))
+			total_len = len(string1)+max(5,len(string0))
+		f.write(string1)
 f.write('\n')
 # write angular cards
 f.write('c \n')
 f.write('c ANGULAR WIDTHS\n')
 f.write('c \n')
 for k in range(0,len(theta_bins)-1):
-	if theta_bins[k]==0.0:
-		f.write('SI%d    -1     %16.14f 200i %16.14f\n'%(k+800,numpy.cos(theta_bins[k+1]),numpy.cos(theta_bins[k])))
-		f.write('SP%d    0.0    0.0              200i 1.0\n'%(k+800))
-	else:
-		f.write('SI%d   -1.0   %16.14f 200i %16.14f %16.14f  1.0\n'%(k+800,numpy.cos(theta_bins[k+1]),numpy.cos(theta_bins[k]),numpy.cos(theta_bins[k])+1e-8))
-		f.write('SP%d    0.0   0.0              200i 1.0              0.0               0.0\n'%(k+800))
-	f.write('c \n')
+	if probs[k]>0.0:
+		if theta_bins[k]==0.0:
+			f.write('SI%d    -1     %16.14f 200i %16.14f\n'%(k+800,numpy.cos(theta_bins[k+1]),numpy.cos(theta_bins[k])))
+			f.write('SP%d    0.0    0.0              200i 1.0\n'%(k+800))
+		elif theta_bins[k+1]==numpy.pi:
+			f.write('SI%d    %16.14f 200i %16.14f\n'%(k+800,numpy.cos(theta_bins[k+1]),numpy.cos(theta_bins[k])))
+			f.write('SP%d    0.0              200i 1.0\n'%(k+800))
+		else:
+			f.write('SI%d   -1.0   %16.14f 200i %16.14f %16.14f  1.0\n'%(k+800,numpy.cos(theta_bins[k+1]),numpy.cos(theta_bins[k]),numpy.cos(theta_bins[k])+1e-8))
+			f.write('SP%d    0.0   0.0              200i 1.0              0.0               0.0\n'%(k+800))
+		f.write('c \n')
 #write energy cards
 f.write('c \n')
 f.write('c ANGULAR-DEPENDENT ENERGY DISTRIBUTIONS\n')
@@ -2032,41 +2056,43 @@ string0 = 'DS995   S '
 f.write(string0)
 total_len = len(string0)
 for k in range(0,len(theta_bins)-1):
-    string1=' D%d'%(k+700)
-    total_len = total_len + len(string1)
-    if total_len > 80:
-        f.write('\n'+' '*max(5,len(string0)))
-        total_len = len(string1)+max(5,len(string0))
-    f.write(string1)
+	if probs[k]>0.0:
+		string1=' D%d'%(k+700)
+		total_len = total_len + len(string1)
+		if total_len > 80:
+			f.write('\n'+' '*max(5,len(string0)))
+			total_len = len(string1)+max(5,len(string0))
+		f.write(string1)
 f.write('\n')
 for k in range(0,len(theta_bins)-1):
-    # SI card first
-    string0 = 'SI%d  H '%(k+700)
-    f.write(string0)
-    total_len = len(string0)
-    for j in range(0,len(histograms_curr[k].bins)):
-        string1=' %6.4E'%histograms_curr[k].bins[j]
-        total_len = total_len + len(string1)
-        if total_len > 80:
-            f.write('\n'+' '*max(5,len(string0)))
-            total_len = len(string1)+max(5,len(string0))
-        f.write(string1)
-    f.write('\n')
-    # SP card second
-    string0 = 'SP%d    '%(k+700)
-    f.write(string0)
-    total_len = len(string0)
-    string1=' %6.4E'%0.0
-    total_len = total_len + len(string1)
-    f.write(string1)    
-    for j in range(0,len(histograms_curr[k].values)):
-        string1=' %6.4E'%histograms_curr[k].values[j]
-        total_len = total_len + len(string1)
-        if total_len > 80:
-            f.write('\n'+' '*max(5,len(string0)))
-            total_len = len(string1)+max(5,len(string0))
-        f.write(string1)
-    f.write('\n')
-    f.write('c \n')
+	if probs[k]>0.0:
+		# SI card first
+		string0 = 'SI%d  H '%(k+700)
+		f.write(string0)
+		total_len = len(string0)
+		for j in range(0,len(histograms_curr[k].bins)):
+			string1=' %6.4E'%histograms_curr[k].bins[j]
+			total_len = total_len + len(string1)
+			if total_len > 80:
+				f.write('\n'+' '*max(5,len(string0)))
+				total_len = len(string1)+max(5,len(string0))
+			f.write(string1)
+		f.write('\n')
+		# SP card second
+		string0 = 'SP%d    '%(k+700)
+		f.write(string0)
+		total_len = len(string0)
+		string1=' %6.4E'%0.0
+		total_len = total_len + len(string1)
+		f.write(string1)    
+		for j in range(0,len(histograms_curr[k].values)):
+			string1=' %6.4E'%histograms_curr[k].values[j]
+			total_len = total_len + len(string1)
+			if total_len > 80:
+				f.write('\n'+' '*max(5,len(string0)))
+				total_len = len(string1)+max(5,len(string0))
+			f.write(string1)
+		f.write('\n')
+		f.write('c \n')
 f.close()
 print "\nDONE.\n"
