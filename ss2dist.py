@@ -656,7 +656,9 @@ class histogram:
 		self.bins		= 	copy.deepcopy(bins)  # bins are edges
 		self.n_bins		=	len(bins)
 		self.values		=	numpy.zeros((self.n_bins-1,))
-		self.counts		= 	numpy.zeros((self.n_bins-1,))
+		self.sqvals		=	numpy.zeros((self.n_bins-1,))
+		self.counts		=	numpy.zeros((self.n_bins-1,))
+		self.err		=	numpy.zeros((self.n_bins-1,))
 
 	def add(self,bin_val,weight):
 
@@ -669,7 +671,26 @@ class histogram:
 		if valid:
 			dex = next((i for i, x in enumerate(bin_val < self.bins) if x), False) - 1
 			self.values[dex] = self.values[dex] + weight
+			self.sqvals[dex] = self.sqvals[dex] + weight*weight
 			self.counts[dex] = self.counts[dex] + 1
+
+	def update(self):
+
+		# calculate error
+		for dex in range(0,self.n_bins-1):
+			N		= self.counts[dex]
+			sum_xi	= self.values[dex]
+			sum_xi2	= self.sqvals[dex]
+			if N==1:
+				self.err[dex] = 1.0
+			elif N > 1:
+				tally_err_sq =   1.0/(N-1) * ( N*sum_xi2/(sum_xi*sum_xi) - 1.0) 
+				if tally_err_sq > 0:
+					self.err[dex] = numpy.sqrt(tally_err_sq)
+				else:
+					self.err[dex] = 0.0
+			else:
+				self.err[dex] = 0.0
 
 def make_independent_distribution(file_obj,dist_number,vector_vars,vector_probs):
 	assert(len(vector_vars)==len(vector_probs)+1)
@@ -1516,18 +1537,18 @@ if typeflag:
 		#x_bins   = numpy.linspace(-45,45,181)
 		#x_bins   = numpy.linspace(-20,20,41)
 		#x_bins   = numpy.linspace(-19.1,-14.1,11)
-		x_bins   = numpy.linspace(-1,1,9)
+		x_bins   = numpy.linspace(-0.707,0.707,9)
 		#diff     = x_bins[1]-x_bins[0]
 		#x_bins   = numpy.insert(x_bins,0,x_bins[0] -diff)
 		#x_bins   = numpy.append(x_bins,  x_bins[-1]+diff) 
 		#y_bins   = numpy.linspace(-45,45,181)
 		#y_bins   = numpy.linspace(-10,10,21)
-		y_bins   = numpy.linspace(-1,1,9)
+		y_bins   = numpy.linspace(-0.707,0.707,9) # to fit in circle radius 1
 		#diff     = y_bins[1]-y_bins[0]
 		#y_bins   = numpy.insert(y_bins,0,y_bins[0] -diff)
 		#y_bins   = numpy.append(y_bins,  y_bins[-1]+diff)
 		#theta_bins = numpy.array([0,0.5,1.0,1.5,2.0,2.5,3.0,90.0])*numpy.pi/180.0   # 90 included as sanity check, ss should only write tracks in normal dir
-		theta_bins  = make_equi_str(0.5*numpy.pi/180.0,64)
+		theta_bins  = make_equi_str(1*numpy.pi/180.0,8)
 		#theta_bins = numpy.linspace(0,15,5)*numpy.pi/180.0
 		phi_bins = numpy.linspace(0,2*numpy.pi,2) 
 		dist     = numpy.zeros((  len(E_bins)-1 , len(theta_bins)-1 , len(phi_bins)-1 , len(y_bins)-1 , len(x_bins)-1 ),dtype=numpy.float64)
@@ -1546,7 +1567,7 @@ if typeflag:
 		surface_vec1_rot    = rotate_xy(surface_vec1,  xy_rotation_degrees) 
 		surface_vec2_rot    = rotate_xy(surface_vec2,  xy_rotation_degrees) 
 		# spectrum plot
-		spec_res=256.
+		spec_res=128.
 		surface_area=(x_bins[-1]-x_bins[0])*(y_bins[-1]-y_bins[0])
 else:
 	dist            	= d['dist']           
@@ -1854,17 +1875,24 @@ if typeflag:
 				if(this_wgt > max_wgt and printflag and errorflag):
 					print "wgt = %6.4E is greater than maximum specified weight %6.4E" % (this_wgt,max_wgt)
 	print "max weight",wgt_avg
+	# update the histograms to calculate error, must be done before nps division!
+	for i in range(0,len(theta_bins)-1):
+		histograms_curr[i].update()
+		histograms_flux[i].update()
+		histograms_wght[i].update()
 	### normalize dist to nps:
 	unit_area = (y_bins[1]-y_bins[0])*(x_bins[1]-x_bins[0])
 	surface_nps = abs(track.nps)
 	total_weight = 0.0
 	total_tracks = 0
+	# divide by nps
 	for i in range(0,len(theta_bins)-1):
 		total_tracks = total_tracks + numpy.sum(histograms_curr[i].counts)
 		total_weight = total_weight + numpy.sum(histograms_curr[i].values)
 		histograms_curr[i].values = histograms_curr[i].values / surface_nps
 		histograms_flux[i].values = histograms_flux[i].values / surface_nps
 	npstrack_ratio = surface_nps/total_tracks
+	# divide dists array
 	if fluxflag:
 		dist = dist / surface_nps / unit_area
 	else:
@@ -2037,6 +2065,8 @@ cm  = plt.get_cmap('jet')
 cNorm  = colors.Normalize(vmin=0, vmax=len(theta_bins)-1)
 scalarMap = cmx.ScalarMappable(norm=cNorm, cmap=cm)
 spec_total = numpy.zeros(histograms_curr[0].values.shape)
+err_total  = numpy.zeros(histograms_curr[0].err.shape)
+counts_total  = numpy.zeros(histograms_curr[0].values.shape)
 for i in range(0,len(theta_bins)-1):
 	#if fluxflag:
 	#	h = histograms_flux[i].values
@@ -2063,7 +2093,11 @@ for i in range(0,len(theta_bins)-1):
 			spec = spec * 2.0
 	else:
 		area_total = 1.0
+	# accumulate
 	spec_total = numpy.add(spec_total,spec*sa)
+	counts_total = numpy.add(counts_total,histograms_curr[i].counts)
+	err_total  = numpy.add(err_total,numpy.multiply(spec*sa,1.0+histograms_curr[i].err))
+	# plot
 	colorVal = scalarMap.to_rgba(i)
 	if wavelength:
 		make_steps(ax1,to_wavelength(histograms_curr[i].bins),[0],spec,options=['lin'],color=colorVal,label=r'$\theta$ = %4.2f - %4.2f (%4.2E sr)'%(theta_bins[i]*180.0/numpy.pi,theta_bins[i+1]*180.0/numpy.pi,2.0 * numpy.pi * ( numpy.cos(theta_bins[i]) - numpy.cos(theta_bins[i+1]) )),linewidth=2)
@@ -2072,11 +2106,19 @@ for i in range(0,len(theta_bins)-1):
 #
 # total spec
 #
+# calc error
+for j in range(0,len(err_total)-1):
+	if spec_total[j] > 0:
+		err_total[j]  = (err_total[j]-spec_total[j]) / spec_total[j] 
+	else:
+		err_total[j] = 0.0
+# renomalize to total str
 if brightness:
 	sa = 2.0 * numpy.pi * ( numpy.cos(theta_bins[0]) - numpy.cos(theta_bins[-1]) )
 else:
 	sa = 1.0
 spec_total = spec_total / sa
+# plot
 if wavelength:
 	make_steps(ax2,to_wavelength(histograms_curr[0].bins),[0],spec_total,options=['lin'],color='b',label=r'$\theta$ = %4.2f - %4.2f (%4.2E sr)'%(theta_bins[0]*180.0/numpy.pi,theta_bins[-1]*180.0/numpy.pi,2.0 * numpy.pi * ( numpy.cos(theta_bins[i]) - numpy.cos(theta_bins[i+1]) )),linewidth=2)
 	if this_sc == 2232: 
@@ -2084,6 +2126,8 @@ if wavelength:
 else:
 	#print histograms_curr[0].bins
 	make_steps(ax2,histograms_curr[0].bins,               [0],spec_total,options=['log'],color='b',label=r'$\theta$ = %4.2f - %4.2f (%4.2E sr)'%(theta_bins[0]*180.0/numpy.pi,theta_bins[-1]*180.0/numpy.pi,2.0 * numpy.pi * ( numpy.cos(theta_bins[i]) - numpy.cos(theta_bins[i+1]) )),linewidth=2)
+	avg = (histograms_curr[i].bins[:-1]+histograms_curr[i].bins[1:])/2.0
+	ax2.errorbar(avg,spec_total,yerr=numpy.multiply(err_total,spec_total),linestyle='None',alpha=1.0,color='r')
 	if this_sc == 2232: 
 		exp_ene = to_energy(exp_wvl)
 		diff = -numpy.diff(exp_ene)
@@ -2106,27 +2150,38 @@ else:
 # undo normalization
 spec_total = numpy.multiply(spec_total,widths)
 spec_total = numpy.divide(spec_total,avg)
-print histograms_curr[0].bins[46],histograms_curr[0].bins[47]
 #
+print spec_total
+print err_total
+print counts_total
 range1=[0.0,600.0]
 this_sum=sum_spec_bins(histograms_curr[0].bins,spec_total,range1)
-print "Neutron Population %6.4E - %6.4E MeV = %6.4E" %  (range1[0],range1[1],this_sum)
+err_sum=sum_spec_bins(histograms_curr[0].bins,numpy.multiply(spec_total,1.0+err_total),range1)
+print "Neutron Population %6.4E - %6.4E MeV = %6.4E [%6.4E]" %  (range1[0],range1[1],this_sum,(err_sum-this_sum)/this_sum)
 
 range1=[0.0,1e-6]
 this_sum=sum_spec_bins(histograms_curr[0].bins,spec_total,range1)
-print "Neutron Population %6.4E - %6.4E MeV = %6.4E" %  (range1[0],range1[1],this_sum)
+err_sum=sum_spec_bins(histograms_curr[0].bins,numpy.multiply(spec_total,1.0+err_total),range1)
+print "Neutron Population %6.4E - %6.4E MeV = %6.4E [%6.4E]" %  (range1[0],range1[1],this_sum,(err_sum-this_sum)/this_sum)
+
 
 range1=[1e-6,600.0]
 this_sum=sum_spec_bins(histograms_curr[0].bins,spec_total,range1)
-print "Neutron Population %6.4E - %6.4E MeV = %6.4E" %  (range1[0],range1[1],this_sum)
+err_sum=sum_spec_bins(histograms_curr[0].bins,numpy.multiply(spec_total,1.0+err_total),range1)
+print "Neutron Population %6.4E - %6.4E MeV = %6.4E [%6.4E]" %  (range1[0],range1[1],this_sum,(err_sum-this_sum)/this_sum)
+
 
 range1=[0.01,600.0]
 this_sum=sum_spec_bins(histograms_curr[0].bins,spec_total,range1)
-print "Neutron Population %6.4E - %6.4E MeV = %6.4E" %  (range1[0],range1[1],this_sum)
+err_sum=sum_spec_bins(histograms_curr[0].bins,numpy.multiply(spec_total,1.0+err_total),range1)
+print "Neutron Population %6.4E - %6.4E MeV = %6.4E [%6.4E]" %  (range1[0],range1[1],this_sum,(err_sum-this_sum)/this_sum)
+
 
 range1=[0.1,600.0]
 this_sum=sum_spec_bins(histograms_curr[0].bins,spec_total,range1)
-print "Neutron Population %6.4E - %6.4E MeV = %6.4E" %  (range1[0],range1[1],this_sum)
+err_sum=sum_spec_bins(histograms_curr[0].bins,numpy.multiply(spec_total,1.0+err_total),range1)
+print "Neutron Population %6.4E - %6.4E MeV = %6.4E [%6.4E]" %  (range1[0],range1[1],this_sum,(err_sum-this_sum)/this_sum)
+
 
 
 
