@@ -16,6 +16,8 @@ from MCNPtools.to_energy import to_energy
 from MCNPtools.to_temperature import to_temperature
 from MCNPtools.to_wavelength import to_wavelength
 from scipy.integrate import quad
+from matplotlib.colors import LogNorm
+
 
 class SourceSurf(object):
     def __init__(self):
@@ -89,7 +91,7 @@ class SurfSrc(mcnp.SurfSrc):
                           track_data.v*track_data.v), track_data.bitarray)
         else:
             track_data.w = 0.0
-        return track_data
+	return track_data
     def read_header(self):
         """Read in the header block data. This block comprises 4 fortran
         records which we refer to as: header, table1, table2, summary.
@@ -1636,18 +1638,20 @@ if typeflag:
 		# sphere flag
 		sphere = False
 		#  bin parameters
-		E_bins   = numpy.array([1e-11,1e-6,1,600])
+		#E_bins   = numpy.array([1e-11,1e-6,1,600])
+		E_bins   = numpy.array([1e-11,to_energy(2.0),600])
+		# E_bins   = numpy.array([1e-11,to_energy(2.0),600])
 		# for high stats
 		x_bins   = numpy.linspace(-70,70,1121)
 		y_bins   = numpy.linspace(-20,20,321)
 		# for low stats
-		x_bins   = numpy.linspace(-70,70,281)
-		y_bins   = numpy.linspace(-20,20,81)
+		#x_bins   = numpy.linspace(-70,70,281)
+		#y_bins   = numpy.linspace(-20,20,81)
 		# for just AMOR/SANS
-		x_bins   = numpy.linspace( 60,70,21)
-		y_bins   = numpy.linspace(-20,20,81)
+		#x_bins   = numpy.linspace( 60,70,81)
+		#y_bins   = numpy.linspace(-20,20,321)
 		#theta_bins = numpy.array([0,1,2,3,4,5,10,20])*numpy.pi/180.0   # 90 included as sanity check, ss should only write tracks in normal dir
-		theta_bins = numpy.array([0,90])*numpy.pi/180.0
+		theta_bins = numpy.array([0,1,2,3,4,5,6,7,8,9,10,90])*numpy.pi/180.0
 		phi_bins = numpy.linspace(0,2*numpy.pi,2) 
 		dist     = numpy.zeros((  len(E_bins)-1 , len(theta_bins)-1 , len(phi_bins)-1 , len(y_bins)-1 , len(x_bins)-1 ),dtype=numpy.float64)
 		#  surface plane parameters
@@ -1693,6 +1697,179 @@ if typeflag:
 		surface_normal_rot = surface_normal 
 		surface_vec1    = numpy.array([-surface_plane[1],surface_plane[0] ,  0.0])
 		surface_vec2    = numpy.array([0.0,0.0,1.0])
+		yz_rotation_degrees =  0.0
+		xy_rotation_degrees =  0.0
+		surface_normal_rot  = rotate_xy(surface_normal,xy_rotation_degrees) 
+		surface_vec1_rot    = rotate_xy(surface_vec1,  xy_rotation_degrees) 
+		surface_vec2_rot    = rotate_xy(surface_vec2,  xy_rotation_degrees) 
+		# spectrum plot
+		spec_res=256.
+		surface_area=(x_bins[-1]-x_bins[0])*(y_bins[-1]-y_bins[0])
+	elif this_sc == 10304:
+		# sphere flag
+		sphere = False
+		#  bin parameters
+		#E_bins   = numpy.array([1e-11,1e-6,1,600])
+		E_bins   = numpy.array([1e-11,to_energy(2.0),600])
+		# E_bins   = numpy.array([1e-11,to_energy(2.0),600])
+		# for high stats
+		x_bins   = numpy.linspace(-425,425,1701)
+		y_bins   = numpy.linspace(-153.5,286.0,880)
+		# for low stats
+		#x_bins   = numpy.linspace(-70,70,281)
+		#y_bins   = numpy.linspace(-20,20,81)
+		# for just AMOR/SANS
+		#x_bins   = numpy.linspace( 60,70,81)
+		#y_bins   = numpy.linspace(-20,20,321)
+		#theta_bins = numpy.array([0,1,2,3,4,5,10,20])*numpy.pi/180.0   # 90 included as sanity check, ss should only write tracks in normal dir
+		theta_bins = numpy.array([0,90])*numpy.pi/180.0
+		phi_bins = numpy.linspace(0,2*numpy.pi,2) 
+		dist     = numpy.zeros((  len(E_bins)-1 , len(theta_bins)-1 , len(phi_bins)-1 , len(y_bins)-1 , len(x_bins)-1 ),dtype=numpy.float64)
+		#  surface plane parameters
+		surface_plane   = numpy.array([ 1.0, 0.0, 0.0, 1165.0734])   # plane, GLOBAL coordinates
+		surface_center  = numpy.array([ 1165.0734, -226.3105 , 0.0 ])
+		surface_normal  = numpy.array([surface_plane[0],surface_plane[1],surface_plane[2]]) 
+		surface_normal_rot = surface_normal 
+		surface_vec1    = numpy.array([-surface_plane[1],surface_plane[0] ,  0.0])
+		surface_vec2    = numpy.array([0.0,0.0,1.0])
+		yz_rotation_degrees =  0.0
+		xy_rotation_degrees =  0.0
+		surface_normal_rot  = rotate_xy(surface_normal,xy_rotation_degrees) 
+		surface_vec1_rot    = rotate_xy(surface_vec1,  xy_rotation_degrees) 
+		surface_vec2_rot    = rotate_xy(surface_vec2,  xy_rotation_degrees) 
+		# spectrum plot
+		spec_res=256.
+		surface_area=(x_bins[-1]-x_bins[0])*(y_bins[-1]-y_bins[0])
+	elif this_sc == 10307:
+		# sphere flag
+		sphere = False
+		#  bin parameters
+		#E_bins   = numpy.array([1e-11,1e-6,1,600])
+		E_bins   = numpy.array([1e-11,to_energy(2.0),600])
+		# E_bins   = numpy.array([1e-11,to_energy(2.0),600])
+		# for high stats
+		x_bins   = numpy.linspace(-425,425,1701)
+		y_bins   = numpy.linspace(-153.5,286.0,880)
+		# for low stats
+		#x_bins   = numpy.linspace(-70,70,281)
+		#y_bins   = numpy.linspace(-20,20,81)
+		# for just AMOR/SANS
+		#x_bins   = numpy.linspace( 60,70,81)
+		#y_bins   = numpy.linspace(-20,20,321)
+		#theta_bins = numpy.array([0,1,2,3,4,5,10,20])*numpy.pi/180.0   # 90 included as sanity check, ss should only write tracks in normal dir
+		theta_bins = numpy.array([0,90])*numpy.pi/180.0
+		phi_bins = numpy.linspace(0,2*numpy.pi,2) 
+		dist     = numpy.zeros((  len(E_bins)-1 , len(theta_bins)-1 , len(phi_bins)-1 , len(y_bins)-1 , len(x_bins)-1 ),dtype=numpy.float64)
+		#  surface plane parameters
+		surface_plane   = numpy.array([ 1.0, 0.0, 0.0, 2.9847115E+03])   # plane, GLOBAL coordinates
+		surface_center  = numpy.array([ 2.9847115E+03, -226.3105 , 0.0 ])
+		surface_normal  = numpy.array([surface_plane[0],surface_plane[1],surface_plane[2]]) 
+		surface_normal_rot = surface_normal 
+		surface_vec1    = numpy.array([-surface_plane[1],surface_plane[0] ,  0.0])
+		surface_vec2    = numpy.array([0.0,0.0,1.0])
+		yz_rotation_degrees =  0.0
+		xy_rotation_degrees =  0.0
+		surface_normal_rot  = rotate_xy(surface_normal,xy_rotation_degrees) 
+		surface_vec1_rot    = rotate_xy(surface_vec1,  xy_rotation_degrees) 
+		surface_vec2_rot    = rotate_xy(surface_vec2,  xy_rotation_degrees) 
+		# spectrum plot
+		spec_res=256.
+		surface_area=(x_bins[-1]-x_bins[0])*(y_bins[-1]-y_bins[0])
+	elif this_sc == 19921:
+		# sphere flag
+		sphere = False
+		#  bin parameters
+		E_bins   = numpy.array([1e-11,1e-6,1,600])
+		# E_bins   = numpy.array([1e-11,to_energy(2.0),600])
+		# for high stats
+		x_bins   = numpy.linspace(-3,3,25)
+		y_bins   = numpy.linspace(-3,3,25)
+		# for low stats
+		#x_bins   = numpy.linspace(-70,70,281)
+		#y_bins   = numpy.linspace(-20,20,81)
+		# for just AMOR/SANS
+		#x_bins   = numpy.linspace( 60,70,81)
+		#y_bins   = numpy.linspace(-20,20,321)
+		#theta_bins = numpy.array([0,1,2,3,4,5,10,20])*numpy.pi/180.0   # 90 included as sanity check, ss should only write tracks in normal dir
+		theta_bins = numpy.array([0,90])*numpy.pi/180.0
+		phi_bins = numpy.linspace(0,2*numpy.pi,2) 
+		dist     = numpy.zeros((  len(E_bins)-1 , len(theta_bins)-1 , len(phi_bins)-1 , len(y_bins)-1 , len(x_bins)-1 ),dtype=numpy.float64)
+		#  surface plane parameters
+		surface_plane   = numpy.array([ 0.999271498664505 , 0.038163751869997 , 0.0 , 2919.054060375774500])   # plane, GLOBAL coordinates
+		surface_center  = numpy.array([ 2917.492265, 96.615, 3.5 ])
+		surface_normal  = numpy.array([surface_plane[0],surface_plane[1],surface_plane[2]]) 
+		surface_normal_rot = surface_normal 
+		surface_vec1    = numpy.array([-surface_plane[1],surface_plane[0] ,  0.0])
+		surface_vec2    = numpy.array([0.0,0.0,1.0])
+		yz_rotation_degrees =  0.0
+		xy_rotation_degrees =  0.0
+		surface_normal_rot  = rotate_xy(surface_normal,xy_rotation_degrees) 
+		surface_vec1_rot    = rotate_xy(surface_vec1,  xy_rotation_degrees) 
+		surface_vec2_rot    = rotate_xy(surface_vec2,  xy_rotation_degrees) 
+		# spectrum plot
+		spec_res=256.
+		surface_area=(x_bins[-1]-x_bins[0])*(y_bins[-1]-y_bins[0])
+	elif this_sc == 19920:
+		# sphere flag
+		sphere = False
+		#  bin parameters
+		E_bins   = numpy.array([1e-11,1e-6,1,600])
+		# E_bins   = numpy.array([1e-11,to_energy(2.0),600])
+		# for high stats
+		x_bins   = numpy.linspace(-3,3,25)
+		y_bins   = numpy.linspace(-3,3,25)
+		# for low stats
+		#x_bins   = numpy.linspace(-70,70,281)
+		#y_bins   = numpy.linspace(-20,20,81)
+		# for just AMOR/SANS
+		#x_bins   = numpy.linspace( 60,70,81)
+		#y_bins   = numpy.linspace(-20,20,321)
+		#theta_bins = numpy.array([0,1,2,3,4,5,10,20])*numpy.pi/180.0   # 90 included as sanity check, ss should only write tracks in normal dir
+		theta_bins = numpy.array([0,90])*numpy.pi/180.0
+		phi_bins = numpy.linspace(0,2*numpy.pi,2) 
+		dist     = numpy.zeros((  len(E_bins)-1 , len(theta_bins)-1 , len(phi_bins)-1 , len(y_bins)-1 , len(x_bins)-1 ),dtype=numpy.float64)
+		#  surface plane parameters
+		surface_plane   = numpy.array([ 0.999271498664505 , 0.038163751869997 , 0.0 , 2955.054060373856400])   # plane, GLOBAL coordinates
+		surface_center  = numpy.array([  2953.46603895,    97.98889507,    3.5])
+		surface_normal  = numpy.array([surface_plane[0],surface_plane[1],surface_plane[2]]) 
+		surface_normal_rot = surface_normal 
+		surface_vec1    = numpy.array([-surface_plane[1],surface_plane[0] ,  0.0])
+		surface_vec2    = numpy.array([0.0,0.0,1.0])
+		yz_rotation_degrees =  0.0
+		xy_rotation_degrees =  0.0
+		surface_normal_rot  = rotate_xy(surface_normal,xy_rotation_degrees) 
+		surface_vec1_rot    = rotate_xy(surface_vec1,  xy_rotation_degrees) 
+		surface_vec2_rot    = rotate_xy(surface_vec2,  xy_rotation_degrees) 
+		# spectrum plot
+		spec_res=256.
+		surface_area=(x_bins[-1]-x_bins[0])*(y_bins[-1]-y_bins[0])
+	elif this_sc == 19940:
+		# sphere flag
+		sphere = False
+		#  bin parameters
+		E_bins   = numpy.array([1e-11,1e-6,1,600])
+		# E_bins   = numpy.array([1e-11,to_energy(2.0),600])
+		# for high stats
+		x_bins   = numpy.linspace(-3,3,25)
+		y_bins   = numpy.linspace(-3,3,25)
+		# for low stats
+		#x_bins   = numpy.linspace(-70,70,281)
+		#y_bins   = numpy.linspace(-20,20,81)
+		# for just AMOR/SANS
+		#x_bins   = numpy.linspace( 60,70,81)
+		#y_bins   = numpy.linspace(-20,20,321)
+		#theta_bins = numpy.array([0,1,2,3,4,5,10,20])*numpy.pi/180.0   # 90 included as sanity check, ss should only write tracks in normal dir
+		theta_bins = numpy.array([0,90])*numpy.pi/180.0
+		phi_bins = numpy.linspace(0,2*numpy.pi,2) 
+		dist     = numpy.zeros((  len(E_bins)-1 , len(theta_bins)-1 , len(phi_bins)-1 , len(y_bins)-1 , len(x_bins)-1 ),dtype=numpy.float64)
+		#  surface plane parameters
+		surface_plane   = numpy.array([ 9.9491877E-01 ,  9.3828069E-02 ,  3.6509316E-02  , 2.0678812E+03])   # plane, GLOBAL coordinates
+		surface_center  = numpy.array([ 2065.759820, 134.48, 0.0])
+		surface_normal  = numpy.array([surface_plane[0],surface_plane[1],surface_plane[2]]) 
+		surface_normal_rot = surface_normal 
+		surface_vec1    = numpy.array([-surface_plane[1],surface_plane[0] ,  0.0])
+		surface_vec1    = surface_vec1 / numpy.sqrt(numpy.dot(surface_vec1,surface_vec1))
+		surface_vec2    = -numpy.cross(surface_vec1,surface_normal)
 		yz_rotation_degrees =  0.0
 		xy_rotation_degrees =  0.0
 		surface_normal_rot  = rotate_xy(surface_normal,xy_rotation_degrees) 
@@ -1893,7 +2070,7 @@ if typeflag:
 
 	if printflag:
 		print "\n============================\n"
-		print "Binning tracks... "
+		print "Binning %d tracks... "%min(ss.nrss,int(1e10))
 	for i in progress(range(1,min(ss.nrss,int(1e10)))):    #max on BOA-bender 499,672,557?!
 		
 		### get track global position/direction
@@ -2100,75 +2277,166 @@ x_AMOR=[2.5,2.5,-2.5,-2.5,2.5]
 y_AMOR=[-6,6,6,-6,-6]
 x_FOCUS=[-1.76,-1.76,-6.76,-6.76,-1.76]
 y_FOCUS=[-6,6,6,-6,-6]
-#for theta_bin in range(0,len(theta_bins)-1):
-#	for E_bin in range(0,len(E_bins)-1):
-#		f = plt.figure()
-#		ax = f.add_subplot(111)
-#		if fluxflag:
-#			imgplot = ax.imshow(dist[E_bin][theta_bin][phi_bin][:][:]/unit_area*charge_per_milliamp,extent=[x_bins[0],x_bins[-1],y_bins[0],y_bins[-1]],origin='lower',cmap=plt.get_cmap('jet'))
-#			this_weight = numpy.sum(dist[E_bin][theta_bin][phi_bin][:][:])/((y_bins[-1]-y_bins[0])*(x_bins[-1]-x_bins[0]))*charge_per_milliamp
-#		else:
-#			imgplot = ax.imshow(dist[E_bin][theta_bin][phi_bin][:][:]*charge_per_milliamp          ,extent=[x_bins[0],x_bins[-1],y_bins[0],y_bins[-1]],origin='lower',cmap=plt.get_cmap('jet'))
-#			this_weight = numpy.sum(dist[E_bin][theta_bin][phi_bin][:][:]*charge_per_milliamp)
-#		imgplot.set_interpolation('nearest')
-#		theta_deg = theta_bins[theta_bin:theta_bin+2]*180.0/numpy.pi
-#		phi_deg = phi_bins[phi_bin:phi_bin+2]*180.0/numpy.pi
-#		E_meV   = E_bins[E_bin:E_bin+2]*1.0e9
-#		E_eV   = E_bins[E_bin:E_bin+2]*1.0e6
-#		if sphere:
-#			ax.set_ylabel(r'Spherical Polar $\theta$ (rad.)')
-#			ax.set_xlabel(r'Spherical Azimuthal $\phi$ (rad.)')
-#		else:
-#			ax.set_ylabel(r'y (cm)')
-#			ax.set_xlabel(r'x (cm)')
-#		#ax.plot(x_FOCUS,y_FOCUS,'0.5',linewidth=4,linestyle='--')
-#		#ax.set_title(r'Energies %4.2f - %4.2f meV \\       $\theta$ %4.2f - %4.2f $^{\circ}$, $\phi$ %4.2f - %4.2f $^{\circ}$ \\ nps %d tracks %d \\ total weight/nps %4.2E' % (E_meV[0],E_meV[1],theta_deg[0],theta_deg[1],phi_deg[0],phi_deg[1],int(surface_nps),int(track_count[E_bin]),this_weight))
-#		ax.grid()
-#		cbar=pylab.colorbar(imgplot)
-#		if fluxflag:
-#			#cbar.set_label(r"n p$^{-1}$ cm$^{-2}$")
-#			ax.set_title(r'Energies %4.2E - %4.2E eV \\       $\theta$ %4.2f - %4.2f $^{\circ}$, $\phi$ %4.2f - %4.2f $^{\circ}$ \\ Total weight/mAs/cm$^2$ %4.2E' % (E_eV[0],E_eV[1],theta_deg[0],theta_deg[1],phi_deg[0],phi_deg[1],this_weight))
-#			cbar.set_label(r"n mAs$^{-1}$ cm$^{-2}$")
-#		else:
-#			#cbar.set_label(r"n p$^{-1}$")
-#			ax.set_title(r'Energies %4.2E - %4.2E eV \\       $\theta$ %4.2f - %4.2f $^{\circ}$, $\phi$ %4.2f - %4.2f $^{\circ}$ \\ Total weight/mAs %4.2E' % (E_eV[0],E_eV[1],theta_deg[0],theta_deg[1],phi_deg[0],phi_deg[1],this_weight))
-#			cbar.set_label(r"n mAs$^{-1}$")
+upper_lim=[5e7,2e6,1e5]
+for theta_bin in range(0,len(theta_bins)-1):
+	for E_bin in range(0,len(E_bins)-1):
+		f = plt.figure()
+		ax = f.add_subplot(111)
+		if fluxflag:
+			imgplot = ax.imshow(dist[E_bin][theta_bin][phi_bin][:][:]/unit_area*charge_per_milliamp,extent=[x_bins[0],x_bins[-1],y_bins[0],y_bins[-1]],origin='lower',cmap=plt.get_cmap('jet'))
+			this_weight = numpy.sum(dist[E_bin][theta_bin][phi_bin][:][:])/((y_bins[-1]-y_bins[0])*(x_bins[-1]-x_bins[0]))*charge_per_milliamp
+		else:
+			imgplot = ax.imshow(dist[E_bin][theta_bin][phi_bin][:][:]*charge_per_milliamp          ,extent=[x_bins[0],x_bins[-1],y_bins[0],y_bins[-1]],origin='lower',cmap=plt.get_cmap('jet'),norm=LogNorm(vmin=1e3, vmax=upper_lim[E_bin]))
+			this_weight = numpy.sum(dist[E_bin][theta_bin][phi_bin][:][:]*charge_per_milliamp)
+		imgplot.set_interpolation('nearest')
+		theta_deg = theta_bins[theta_bin:theta_bin+2]*180.0/numpy.pi
+		phi_deg = phi_bins[phi_bin:phi_bin+2]*180.0/numpy.pi
+		E_meV   = E_bins[E_bin:E_bin+2]*1.0e9
+		E_eV   = E_bins[E_bin:E_bin+2]*1.0e6
+		if sphere:
+			ax.set_ylabel(r'Spherical Polar $\theta$ (rad.)')
+			ax.set_xlabel(r'Spherical Azimuthal $\phi$ (rad.)')
+		else:
+			ax.set_ylabel(r'y (cm)')
+			ax.set_xlabel(r'x (cm)')
+		#ax.plot(x_FOCUS,y_FOCUS,'0.5',linewidth=4,linestyle='--')
+		#ax.set_title(r'Energies %4.2f - %4.2f meV \\       $\theta$ %4.2f - %4.2f $^{\circ}$, $\phi$ %4.2f - %4.2f $^{\circ}$ \\ nps %d tracks %d \\ total weight/nps %4.2E' % (E_meV[0],E_meV[1],theta_deg[0],theta_deg[1],phi_deg[0],phi_deg[1],int(surface_nps),int(track_count[E_bin]),this_weight))
+		ax.grid()
+		cbar=pylab.colorbar(imgplot)
+		if fluxflag:
+			#cbar.set_label(r"n p$^{-1}$ cm$^{-2}$")
+			ax.set_title(r'Energies %4.2E - %4.2E eV \\       $\theta$ %4.2f - %4.2f $^{\circ}$, $\phi$ %4.2f - %4.2f $^{\circ}$ \\ Total weight/mAs/cm$^2$ %4.2E' % (E_eV[0],E_eV[1],theta_deg[0],theta_deg[1],phi_deg[0],phi_deg[1],this_weight))
+			cbar.set_label(r"n mAs$^{-1}$ cm$^{-2}$")
+		else:
+			#cbar.set_label(r"n p$^{-1}$")
+			ax.set_title(r'Energies %4.2E - %4.2E eV \\       $\theta$ %4.2f - %4.2f $^{\circ}$, $\phi$ %4.2f - %4.2f $^{\circ}$ \\ Total weight/mAs %4.2E' % (E_eV[0],E_eV[1],theta_deg[0],theta_deg[1],phi_deg[0],phi_deg[1],this_weight))
+			cbar.set_label(r"n mAs$^{-1}$")
 #		ax.plot(zap_x1,zap_y,color=[0.5,0.5,0.5],linewidth=3,linestyle='--')
 #		ax.plot(zap_x2,zap_y,color=[0.5,0.5,0.5],linewidth=3,linestyle='--')
-#		ax.set_xlim([x_bins[0],x_bins[-1]])
-#		ax.set_ylim([y_bins[0],y_bins[-1]])
-#		#cbar.set_clim(0, 3e-10)
+		ax.set_xlim([x_bins[0],x_bins[-1]])
+		ax.set_ylim([y_bins[0],y_bins[-1]])
+		#cbar.set_clim(0, 3e-10)
+		#
+		# 10
 #		#
-#		# 10
-##		#
-##		if   theta_bin ==0 and E_bin == 0:
-##			cbar.set_clim(0, 1.5e-5) #5e-6)
-##		elif theta_bin ==0 and E_bin == 1:
-##			cbar.set_clim(0, 7.2e-6)
-#		#
-#		# 90
-#		#
-##		if   theta_bin ==0 and E_bin == 0:
-##			cbar.set_clim(2.1e-4, 4.1e-4) #5e-6)
-##		elif theta_bin ==0 and E_bin == 1:
-##			cbar.set_clim(0, 2.6e-4)
-##		elif theta_bin ==0 and E_bin == 2:
-##			cbar.set_clim(0, 2e-6)
-#		cbar.formatter.set_powerlimits((0, 0))
-#		cbar.update_ticks()
-#		f.savefig('dist_e%d_theta%d'%(E_bin,theta_bin))
-#		pylab.show()
-#		#
-#		#
-#		# plot weight histogram
-#		f2 = plt.figure()
-#		ax2 = f2.add_subplot(111)
-#		make_steps(ax2,histograms_wght[theta_bin].bins,[0],histograms_wght[theta_bin].values,linewidth=1,label='',options=['log'])
-#		ax2.set_ylabel(r'Number')
-#		ax2.set_xlabel(r'Weight')
-#		ax2.grid(1)
-#		plt.show()
+#		if   theta_bin ==0 and E_bin == 0:
+#			cbar.set_clim(0, 1.5e-5) #5e-6)
+#		elif theta_bin ==0 and E_bin == 1:
+#			cbar.set_clim(0, 7.2e-6)
+		#
+		# 90
+		#
+#		if   theta_bin ==0 and E_bin == 0:
+#			cbar.set_clim(2.1e-4, 4.1e-4) #5e-6)
+#		elif theta_bin ==0 and E_bin == 1:
+#			cbar.set_clim(0, 2.6e-4)
+#		elif theta_bin ==0 and E_bin == 2:
+#			cbar.set_clim(0, 2e-6)
+		#cbar.formatter.set_powerlimits((0, 0))
+		#cbar.update_ticks()
+		f.savefig('dist_e%d_theta%d'%(E_bin,theta_bin))
+		pylab.show()
+		#
+		#
+		# plot weight histogram
+		f2 = plt.figure()
+		ax2 = f2.add_subplot(111)
+		make_steps(ax2,histograms_wght[theta_bin].bins,[0],histograms_wght[theta_bin].values,linewidth=1,label='',options=['log'])
+		ax2.set_ylabel(r'Number')
+		ax2.set_xlabel(r'Weight')
+		ax2.grid(1)
+		plt.show()
+
 #
+#
+#
+#
+#
+#
+#   COLD/ELSE RATIO PLOT
+#
+#
+#
+E_bin=0
+surface_area = (x_bins[1]-x_bins[0])*(y_bins[1]-y_bins[0])
+print surface_area
+ratio_plot=numpy.divide(dist[E_bin][theta_bin][phi_bin][:][:],surface_area/charge_per_milliamp)
+#ratio_plot=numpy.divide(dist[E_bin][theta_bin][phi_bin][:][:],dist[E_bin+1][theta_bin][phi_bin][:][:])
+
+#  calculate SANS-I and AMOR average values
+S_x=[60.125,65.125]
+S_y=[1.0,6.0]
+A_x=[63.125,64.125]
+A_y=[-6.0,-5]
+S_xrange=numpy.multiply(x_bins > S_x[0] ,x_bins < S_x[1])
+S_yrange=numpy.multiply(y_bins > S_y[0] ,y_bins < S_y[1])
+A_xrange=numpy.multiply(x_bins > A_x[0] ,x_bins < A_x[1])
+A_yrange=numpy.multiply(y_bins > A_y[0] ,y_bins < A_y[1])
+
+S_x0=numpy.nonzero(S_xrange)[0][0]
+S_x1=numpy.nonzero(S_xrange)[0][-1]
+S_y0=numpy.nonzero(S_yrange)[0][0]
+S_y1=numpy.nonzero(S_yrange)[0][-1]
+A_x0=numpy.nonzero(A_xrange)[0][0]
+A_x1=numpy.nonzero(A_xrange)[0][-1]
+A_y0=numpy.nonzero(A_yrange)[0][0]
+A_y1=numpy.nonzero(A_yrange)[0][-1]
+
+SANS_average=0.0
+AMOR_average=0.0
+AMOR_n=0
+SANS_n=0
+print A_x0, A_x1, A_y0, A_y1
+print S_x0, S_x1, S_y0, S_y1
+for y in range(0,len(y_bins)):
+	for x in range(0,len(x_bins)):
+		if x>=A_x0 and x<A_x1 and y>=A_y0 and y<A_y1:
+			AMOR_average=AMOR_average+ratio_plot[y][x]
+			AMOR_n=AMOR_n+1
+		if x>=S_x0 and x<S_x1 and y>=S_y0 and y<S_y1:
+			SANS_average=SANS_average+ratio_plot[y][x]
+			SANS_n=SANS_n+1
+
+SANS_average=SANS_average/SANS_n
+AMOR_average=AMOR_average/AMOR_n
+
+print "SANS average",SANS_average
+print "AMOR average",AMOR_average
+
+A_xx=[A_x[1],A_x[1],A_x[0],A_x[0],A_x[1]]
+A_yy=[A_y[0],A_y[1],A_y[1],A_y[0],A_y[0]]
+
+S_xx=[S_x[1],S_x[1],S_x[0],S_x[0],S_x[1]]
+S_yy=[S_y[0],S_y[1],S_y[1],S_y[0],S_y[0]]
+
+
+# plot
+f = plt.figure()
+ax = f.add_subplot(111)
+imgplot = ax.imshow(ratio_plot ,extent=[x_bins[0],x_bins[-1],y_bins[0],y_bins[-1]],origin='lower',cmap=plt.get_cmap('jet'))#,vmin=0.0,vmax=10.0)
+this_weight = numpy.sum(dist[E_bin][theta_bin][phi_bin][:][:]*charge_per_milliamp)
+imgplot.set_interpolation('nearest')
+theta_deg = theta_bins[theta_bin:theta_bin+2]*180.0/numpy.pi
+phi_deg = phi_bins[phi_bin:phi_bin+2]*180.0/numpy.pi
+E_meV   = E_bins[E_bin:E_bin+2]*1.0e9
+E_eV   = E_bins[E_bin:E_bin+2]*1.0e6
+ax.set_ylabel(r'y (cm)')
+ax.set_xlabel(r'x (cm)')
+ax.grid()
+cbar=pylab.colorbar(imgplot)
+#ax.set_title(r'\begin{center} Ratio of neutrons $>2\AA$ to neutrons $<2\AA$ at the 6m position \\ AMOR=%1.2E $\bullet$ SANS-I=%1.2E $\bullet$ AMOR/SANS-I=%1.2f \end{center}'%(AMOR_average,SANS_average,AMOR_average/SANS_average))
+ax.set_title(r'\begin{center} Neutrons at the 6m position \\ AMOR=%1.2E $\bullet$ SANS-I=%1.2E $\bullet$ AMOR/SANS-I=%1.2f \end{center}'%(AMOR_average,SANS_average,AMOR_average/SANS_average))
+cbar.set_label(r"n / cm$^2$ / mA")
+ax.plot(zap_x1,zap_y,color=[0.5,0.5,0.5],linewidth=3,linestyle='--')
+ax.plot(zap_x2,zap_y,color=[0.5,0.5,0.5],linewidth=3,linestyle='--')
+ax.plot(A_xx,A_yy,color=numpy.array([218., 20., 255.])/255.0,linewidth=3,linestyle='--')
+ax.plot(S_xx,S_yy,color=numpy.array([218., 20., 255.])/255.0,linewidth=3,linestyle='--')
+ax.set_xlim([x_bins[0],x_bins[-1]])
+ax.set_ylim([y_bins[0],y_bins[-1]])
+pylab.show()
+
+
+
 
 plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
